@@ -21,15 +21,13 @@ jobs:
 
       - name: Build and push image
         uses: docker/build-push-action@v6
-        env:
-          IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/todo-list
         with:
           context: .
           file: dockerfile
           push: true
           tags: |
-            ${{ env.IMAGE }}:latest
-            ${{ env.IMAGE }}:${{ env.VERSION }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/todo-list:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/todo-list:${{ env.VERSION }}
 
       - name: Deploy to EC2 via SSH
         uses: appleboy/ssh-action@v1.2.0
