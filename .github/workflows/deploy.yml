@@ -9,6 +9,9 @@ jobs:
   build-push-deploy:
     runs-on: ubuntu-latest
     env:
+      # Docker Hub image name in the form <dockerhub-username>/<repo-name>, e.g. malnadhudga/todo-list.
+      # The username comes from the DOCKERHUB_USERNAME secret; change "todo-list" to your own repo name.
+      IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/todo-list
       VERSION: v${{ github.run_number }}
     steps:
       - uses: actions/checkout@v4
@@ -21,8 +24,6 @@ jobs:
 
       - name: Build and push image
         uses: docker/build-push-action@v6
-        env:
-          IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/todo-list
         with:
           context: .
           file: dockerfile
@@ -39,21 +40,10 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             set -e
-            IMAGE="${{ secrets.DOCKERHUB_USERNAME }}/todo-list"
-            if ! command -v docker >/dev/null 2>&1; then
-              if command -v apt-get >/dev/null 2>&1; then
-                sudo apt-get update -y
-                sudo apt-get install -y docker.io
-              elif command -v dnf >/dev/null 2>&1; then
-                sudo dnf install -y docker
-              elif command -v yum >/dev/null 2>&1; then
-                sudo yum install -y docker
-              fi
-            fi
             sudo systemctl enable --now docker
-            sudo usermod -aG docker ${{ secrets.EC2_USER }} || true
-            sudo docker pull ${IMAGE}:${{ env.VERSION }}
+            sudo usermod -aG docker $USER
+            sudo docker pull ${{ env.IMAGE }}:${{ env.VERSION }}
             sudo docker rm -f todo-list || true
-            sudo docker run -d --name todo-list --restart unless-stopped -p 8000:8000 ${IMAGE}:${{ env.VERSION }}
+            sudo docker run -d --name todo-list --restart unless-stopped -p 8000:8000 ${{ env.IMAGE }}:${{ env.VERSION }}
             sudo docker image prune -af
             sudo docker ps --filter name=todo-list
